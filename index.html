@@ -2203,7 +2203,7 @@ self.onmessage = (e) => {
 };
 </script>
 <script>
-window.BUILD = {"web":true,"version":"2.15.0","release":"Nachtrag 15 vom 25.09.2026","hash":"f1898526069b","date":"2026-09-25T14:47:51.933Z"};
+window.BUILD = {"web":true,"version":"2.15.0","release":"Nachtrag 15 vom 25.09.2026","hash":"7eb65c88b37c","date":"2026-09-26T18:35:12.136Z"};
 // ---- icons.js ----
 // Eigenes Icon-Set (24er-Raster, Strich 1.75, keine Fremdlizenz). App.icon(name, cls) → SVG-String.
 window.App = window.App || {};
@@ -9399,7 +9399,8 @@ window.App = window.App || {};
     const B = window.BUILD || {};
     body.appendChild(el(`<div class="field about"><span class="field__label">Über die App</span>
       <p class="about__line"><strong>Version ${esc(B.version || '–')}</strong>${B.release ? ` · ${esc(B.release)}` : ''}</p>
-      <p class="muted about__line">Build ${esc(B.hash || '–')}${B.date ? ` · ${esc(new Date(B.date).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }))}` : ''}</p></div>`));
+      <p class="muted about__line">Build ${esc(B.hash || '–')}${B.date ? ` · ${esc(new Date(B.date).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }))}` : ''}</p>${B.web ? '<p class="muted about__line" data-offline>Offline: wird geprüft …</p>' : ''}</div>`));
+    if (B.web) App.offlineState().then((st) => { const x = body.querySelector('[data-offline]'); if (x) x.textContent = { bereit: 'Offline: bereit ✓ – funktioniert ohne Internet', laden: 'Offline: wird noch geladen … (App mit Internet geöffnet lassen)', aus: 'Offline: nicht verfügbar (nur über die Internetadresse)', fehler: 'Offline: nicht verfügbar' }[st]; });
     const sync = () => {
       const s = S.values;
       body.querySelector('[data-set="lh"]').value = String(s.lh);
@@ -9562,7 +9563,19 @@ window.App = window.App || {};
       return;
     }
     // Web-App: offline vorhalten (Service Worker) und Speicher dauerhaft anfordern (Safari löscht sonst nach 7 Tagen ohne Nutzung)
-    if (window.BUILD?.web && 'serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+    /** Offline-Zustand der Web-App: 'bereit' (Service Worker aktiv, Seite im Speicher), 'laden', 'aus', 'fehler'. */
+    App.offlineState = async () => {
+      if (!('serviceWorker' in navigator) || location.protocol === 'file:') return 'aus';
+      try { const reg = await navigator.serviceWorker.getRegistration(); if (!reg?.active) return 'laden'; return (await caches.match('index.html')) ? 'bereit' : 'laden'; } catch { return 'fehler'; }
+    };
+    // Beim ersten Einrichten melden, sobald die Offline-Kopie vollständig ist (Home-Bildschirm-App hat eigenen Speicher)
+    if (window.BUILD?.web && 'serviceWorker' in navigator && location.protocol !== 'file:') {
+      const first = !navigator.serviceWorker.controller;
+      navigator.serviceWorker.register('sw.js').then((reg) => {
+        const watch = (w) => w && w.addEventListener('statechange', () => { if (w.state === 'activated' && first) App.ui.toast('Offline bereit: Die App funktioniert jetzt auch ohne Internet.', { timeout: 8000 }); });
+        watch(reg.installing); reg.addEventListener('updatefound', () => watch(reg.installing));
+      }).catch(() => {});
+    }
     navigator.storage?.persist?.().catch?.(() => {});
     if (!hasProfile) { document.documentElement.dataset.firstRun = 'true'; await firstProfile(); delete document.documentElement.dataset.firstRun; }
     shell();
