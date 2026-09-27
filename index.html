@@ -2203,7 +2203,7 @@ self.onmessage = (e) => {
 };
 </script>
 <script>
-window.BUILD = {"web":true,"version":"2.15.0","release":"Nachtrag 15 vom 25.09.2026","hash":"7eb65c88b37c","date":"2026-09-26T18:35:12.136Z"};
+window.BUILD = {"web":true,"version":"2.15.0","release":"Nachtrag 15 vom 25.09.2026","hash":"2818b09310c5","date":"2026-09-27T06:16:44.869Z"};
 // ---- icons.js ----
 // Eigenes Icon-Set (24er-Raster, Strich 1.75, keine Fremdlizenz). App.icon(name, cls) → SVG-String.
 window.App = window.App || {};
@@ -2288,6 +2288,10 @@ window.App = window.App || {};
 
   /** HTML-Escaping für alle Texte, die in Templates landen. */
   ui.esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  /** Dateifilter für die Auswahl: iPadOS/iOS kennen eigene Endungen (.bibelkommentar, .bibelgrundtext …) nicht und
+   *  grauen solche Dateien aus – dort ohne Filter; die Pakete prüfen ihren Inhalt beim Einlesen selbst. */
+  const IOS = /iP(ad|hone|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  ui.accept = (types) => (IOS ? '' : ` accept="${types}"`);
   ui.el = function (html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
 
   // ---------- Toast ----------
@@ -3260,7 +3264,7 @@ window.App = window.App || {};
     cache.clear();
   };
   const pick = () => new Promise((resolve) => {
-    const inp = el('<input type="file" accept=".bibeltext,application/gzip" hidden>');
+    const inp = el(`<input type="file"${App.ui.accept('.bibeltext,application/gzip')} hidden>`);
     inp.addEventListener('change', () => { resolve(inp.files[0] || null); inp.remove(); }); inp.addEventListener('cancel', () => { resolve(null); inp.remove(); }); document.body.appendChild(inp); inp.click();
   });
 
@@ -6492,7 +6496,7 @@ window.App = window.App || {};
       <div data-warn>${warn()}</div>
       <fieldset class="stack audio-packs"><legend class="field__label">Piper-Stimmenpakete (neuronal, offline)</legend>
         <div data-packs>${packs()}</div>
-        <div class="row"><label class="btn"><input type="file" class="visually-hidden" accept=".bibelstimme" data-pimport>${I('download')}Stimmenpaket einlesen …</label><span class="muted" data-pstatus aria-live="polite"></span></div>
+        <div class="row"><label class="btn"><input type="file" class="visually-hidden" ${App.ui.accept('.bibelstimme')} data-pimport>${I('download')}Stimmenpaket einlesen …</label><span class="muted" data-pstatus aria-live="polite"></span></div>
       </fieldset>
       <label class="field"><span class="field__label">In der Parallelansicht vorlesen</span><select class="select" name="audioPar">
         ${[['de', 'nur Deutsch'], ['ru', 'nur Russisch'], ['both', 'beide, Vers für Vers abwechselnd']].map(([k, l]) => `<option value="${k}" ${(S().audioPar || 'de') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -8372,7 +8376,7 @@ window.App = window.App || {};
 
   function wireImport(host) {
     host.querySelectorAll('[data-comm-import]').forEach((btn) => btn.addEventListener('click', async () => {
-      const inp = el('<input type="file" accept=".bibelkommentar,application/gzip" hidden>'); document.body.appendChild(inp);
+      const inp = el(`<input type="file"${App.ui.accept('.bibelkommentar,application/gzip')} hidden>`); document.body.appendChild(inp);
       const file = await new Promise((r) => { inp.addEventListener('change', () => r(inp.files[0] || null)); inp.click(); }); inp.remove();
       if (!file) return;
       const status = btn.closest('.comm').querySelector('.comm__status');
@@ -8503,7 +8507,7 @@ window.App = window.App || {};
         <p><button type="button" class="btn btn--primary" data-gt-import>${I('upload')}Grundtext-Paket einlesen …</button></p><p class="gt__progress muted" hidden></p>`;
       host.addEventListener('click', async (e) => {
         if (!e.target.closest('[data-gt-import]')) return;
-        const f = await new Promise((resolve) => { const inp = el('<input type="file" accept=".bibelgrundtext,application/gzip" hidden>'); inp.addEventListener('change', () => { resolve(inp.files[0] || null); inp.remove(); }); inp.addEventListener('cancel', () => { resolve(null); inp.remove(); }); document.body.appendChild(inp); inp.click(); });
+        const f = await new Promise((resolve) => { const inp = el(`<input type="file"${App.ui.accept('.bibelgrundtext,application/gzip')} hidden>`); inp.addEventListener('change', () => { resolve(inp.files[0] || null); inp.remove(); }); inp.addEventListener('cancel', () => { resolve(null); inp.remove(); }); document.body.appendChild(inp); inp.click(); });
         if (!f) return;
         const btn = host.querySelector('[data-gt-import]'); if (btn.disabled) return; btn.disabled = true;
         const pr = host.querySelector('.gt__progress'); pr.hidden = false; pr.textContent = 'Wird eingelesen …';
