@@ -1921,6 +1921,26 @@ a.pchip:focus-visible { outline: var(--sp-1) solid var(--c-focus); outline-offse
 .chlist__t { font-family: var(--font-read); }
 @media print { .ch-sub__btn .icon, .ch-moments__more { display: none; } }
 
+/* ---------- Kacheln der Übersicht (Nachtrag 18): klar gegliedert ---------- */
+.ntile { gap: var(--sp-3); }
+.ntile__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.ntile__head .note__ref { min-width: var(--sp-0); }
+.ntile__chips { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--sp-1); margin-left: auto; }
+.ntile__text { margin: var(--sp-0); font-weight: var(--fw-bold); }
+.ntile__tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1); }
+.ntile__tag { height: auto; min-height: calc(var(--ctl-h) - var(--sp-3)); font-size: var(--fs-label); }
+.ntile__fields { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: auto; padding-top: var(--sp-3); border-top: var(--bw-1) solid var(--c-border); }   /* Einstellungen, Datum und Aktionen stehen gemeinsam unten */
+.ntile__field { display: grid; grid-template-columns: calc(var(--sp-8) + var(--sp-3)) minmax(var(--sp-0), 1fr); align-items: center; gap: var(--sp-2); }
+.ntile__label { font-size: var(--fs-label); font-weight: var(--fw-bold); color: var(--c-text-muted); }
+.ntile__field .select--sm { width: 100%; }
+.ntile__meta { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); min-height: calc(var(--ctl-h) - var(--sp-3)); font-size: var(--fs-label); color: var(--c-text-muted); }
+.ntile__more { min-height: auto; padding: var(--sp-1) var(--sp-2); font-size: var(--fs-label); }
+.ntile__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.ntile__close { height: calc(var(--ctl-h) - var(--sp-2)); padding: var(--sp-0) var(--sp-3); }
+.ntile__acts { display: flex; gap: var(--sp-0); margin-left: auto; }
+.ntile__acts .btn--icon { width: calc(var(--ctl-h) - var(--sp-2)); height: calc(var(--ctl-h) - var(--sp-2)); }
+.ntile__acts [data-sunday][aria-pressed="true"] { color: var(--c-accent); background: var(--c-accent-soft); }
+
 /* print.css */
 /* Druck / PDF (A4). Nur Tokens; Maße in pt/mm, weil Druck. Bildschirm: Druckteile ausgeblendet. */
 .print-only { display: none; }
@@ -2256,7 +2276,7 @@ self.onmessage = (e) => {
 };
 </script>
 <script>
-window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"c169c17db974","date":"2026-09-27T22:45:25.286Z"};
+window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"632564a7c221","date":"2026-09-28T06:56:44.115Z"};
 // ---- icons.js ----
 // Eigenes Icon-Set (24er-Raster, Strich 1.75, keine Fremdlizenz). App.icon(name, cls) → SVG-String.
 window.App = window.App || {};
@@ -3794,7 +3814,8 @@ window.App = window.App || {};
       <label class="field"><span class="field__label">${isQ ? 'Frage' : 'Kommentar'}</span><textarea class="textarea" name="text" required>${esc(n.text || '')}</textarea></label>
       ${isQ ? `<label class="field"><span class="field__label">Antwort <span class="muted">(optional)</span></span><textarea class="textarea" name="answer">${esc(n.answer || '')}</textarea></label>
       <div class="row note-q-meta"><fieldset class="field"><legend class="field__label">Priorität</legend><div class="row">${[['', 'keine'], ...A.PRIOS].map(([k, l]) => `<label class="radio"><input type="radio" name="prio" value="${k}" ${(n.prio || '') === k ? 'checked' : ''}> ${l}</label>`).join('')}</div></fieldset>
-        <label class="toggle"><input type="checkbox" class="toggle__input" name="sunday" ${n.sunday ? 'checked' : ''}><span class="toggle__track"></span>Für die Besprechung am Sonntag vormerken</label></div>` : `
+        <label class="toggle"><input type="checkbox" class="toggle__input" name="sunday" ${n.sunday ? 'checked' : ''}><span class="toggle__track"></span>Für die Besprechung am Sonntag vormerken</label></div>` : ''}
+      ${`
       <div class="field"><span class="field__label" id="lbl-topics">Themen</span><div class="row" role="group" aria-labelledby="lbl-topics" data-topics>
         ${topics.map((t) => `<button type="button" class="chip" data-topic="${t.id}" aria-pressed="${chosen.has(t.id)}">${esc(t.name)}</button>`).join('')}</div>
         <div class="row"><label class="grow field"><span class="visually-hidden">Neues Thema</span><input class="input" name="newTopic" placeholder="Neues Thema, z. B. Gnade"></label><button type="button" class="btn" data-add-topic>${I('plus')}Thema</button></div></div>`}
@@ -4541,7 +4562,8 @@ window.App = window.App || {};
   const PRIO_LABEL = Object.fromEntries(App.annot.PRIOS);
   const prioSel = (id, cur) => `<select class="select select--sm" data-note-prio="${id}" aria-label="Priorität">${selOpts([['', 'keine'], ...App.annot.PRIOS], cur || '')}</select>`;
   const SCOPE_LABEL = Object.fromEntries(App.annot.SCOPES);
-  const scopeSel = (attr, id, cur, only) => `<select class="select select--sm" ${attr}="${id}" aria-label="Gilt für">${App.annot.SCOPES.filter(([k]) => !only || k === only).map(([k, l]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  const SCOPE_SHORT = { beide: 'beide', de: 'nur Elberfelder', ru: 'nur Синодальный' };
+  const scopeSel = (attr, id, cur, only, short) => `<select class="select select--sm" ${attr}="${id}" aria-label="Gilt für">${App.annot.SCOPES.filter(([k]) => !only || k === only).map(([k, l]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${short ? SCOPE_SHORT[k] : l}</option>`).join('')}</select>`;
   let rel = null;   // Verknüpfungen Markierung ↔ Notiz (gleiche Übersetzung, gleiches Kapitel, überlappende Verse)
   async function relations() {
     const pid = App.settings.profile.id;
@@ -4731,6 +4753,29 @@ window.App = window.App || {};
         ${x.vt ? `<blockquote lang="${x.n.anchor.trans}">${esc(x.vt)}</blockquote>` : ''}<p>${esc(x.n.text)}</p>${x.n.answer ? `<p><strong>Antwort:</strong> ${esc(x.n.answer)}</p>` : ''}<div class="export-print__notes"></div></section>`).join('')}`;
     App.exporter.printHtml(html, `Besprechung am ${sundayDay()}`);
   }
+  /** Kachel einer Notiz in der Übersicht (Nachtrag 18, neu geordnet): Kopf mit Stelle und Kennzeichen, Inhalt,
+   *  Einstellungen nebeneinander, unten Datum und Aktionen in einer Zeile. Themen antippen = bearbeiten. */
+  function noteTile(x, tb) {
+    const n = x.n, isQ = n.kind === 'question', open = n.status !== 'abgeschlossen', U = App.annotUI;
+    const tps = (n.topics || []).map((t) => tb[t]).filter(Boolean), hl = linkedHls(n);
+    const long = (x.vt || '').length > 100 || n.text.length > 120 || (n.answer || '').length > 120;
+    return `<article class="card ${isQ ? 'card--question' : 'card--comment'} ntile" data-note="${n.id}" id="note-${n.id}">
+      <header class="ntile__head"><button type="button" class="note__ref" data-jump="${n.id}">${I(isQ ? 'question' : 'comment', 'icon-sm')}${esc(qRef(n))}</button>
+        <span class="ntile__chips">${isQ ? U.prioChip(n) + U.sundayChip(n) + `<span class="chip chip--static chip--question">${esc(n.status)}</span>` : ''}${U.scopeChip(n)}</span></header>
+      ${x.vt ? `<blockquote class="note__verse clamp-3" lang="${n.anchor.trans}">${esc(x.vt)}</blockquote>` : ''}
+      <p class="note__text ntile__text clamp-3">${esc(n.text)}</p>
+      ${isQ && n.answer ? `<div class="note__answer"><span class="field__label">Antwort</span><p class="clamp-3">${esc(n.answer)}</p></div>` : ''}
+      ${tps.length || hl ? `<div class="ntile__tags">${tps.map((t) => `<button type="button" class="chip ntile__tag" data-edit="${n.id}" title="Themen bearbeiten">${esc(t.name)}</button>`).join('')}${hl ? `<span class="note__links">${hl}<span class="muted">markiert</span></span>` : ''}</div>` : ''}
+      <div class="ntile__fields"><label class="ntile__field"><span class="ntile__label">Gilt für</span>${scopeSel('data-note-scope', n.id, x.scope, n.anchor.trans === 'ru' ? 'ru' : null, true)}</label>
+        ${isQ ? `<label class="ntile__field"><span class="ntile__label">Priorität</span>${prioSel(n.id, n.prio)}</label>` : ''}</div>
+      <div class="ntile__meta"><span>${fmtDate(x.date)}</span>${long ? '<button type="button" class="btn btn--ghost ntile__more" data-expand>Ganzen Text</button>' : ''}</div>
+      <footer class="ntile__foot">
+        ${isQ && open ? `<button type="button" class="btn ntile__close" data-close-q="${n.id}">${I('check')}Abschließen</button>` : ''}
+        ${isQ && !open ? `<button type="button" class="btn ntile__close" data-reopen="${n.id}">${I('undo')}Wieder öffnen</button>` : ''}
+        <span class="ntile__acts">${isQ && open ? `<button type="button" class="btn btn--ghost btn--icon" data-sunday="${n.id}" aria-pressed="${!!n.sunday}" aria-label="${n.sunday ? 'Nicht mehr für Sonntag vormerken' : 'Für die Besprechung am Sonntag vormerken'}" title="${n.sunday ? 'Für Sonntag vorgemerkt' : 'Für Sonntag vormerken'}">${I('calendar')}</button>` : ''}
+          <button type="button" class="btn btn--ghost btn--icon" data-edit="${n.id}" aria-label="Bearbeiten" title="Bearbeiten">${I('edit')}</button>
+          <button type="button" class="btn btn--ghost btn--icon" data-del="${n.id}" aria-label="Löschen" title="Löschen">${I('trash')}</button></span></footer></article>`;
+  }
   async function listHtml(tab, list, topicsById) {
     if (tab === 'kapitel') return tableHtml(list);
     if (NOTE_TABS.includes(tab) || tab === 'sonntag') await Promise.all(list.map(async (x) => { x.vt = (await App.annotUI.anchorText(x.n.anchor))?.text || ''; }));
@@ -4742,13 +4787,7 @@ window.App = window.App || {};
     const nlabel = { scope: (x) => SCOPE_LABEL[x.scope], book: (x) => App.data.byId[x.book]?.de.name, prio: (x) => (x.n.kind === 'question' ? (x.prio ? `Priorität ${PRIO_LABEL[x.prio]}` : 'ohne Priorität') : null) }[f.ngroup];
     const ngroups = nlabel ? group(list, nlabel) : [[null, list]];
     if (view[tab] === 'table') return ngroups.map(([g, rows]) => `${g !== null ? `<h3 class="dash__group">${esc(g)} <span class="muted">(${rows.length})</span></h3>` : ''}${notesTableHtml(tab, rows, topicsById)}`).join('');
-    return ngroups.map(([g, rows]) => `${g !== null ? `<h3 class="dash__group">${esc(g)} <span class="muted">(${rows.length})</span></h3>` : ''}<div class="card-grid dash__notes">${rows.map((x) => {
-      const hl = linkedHls(x.n);
-      return App.annotUI.noteCard(x.n, topicsById, { full: true })
-        .replace('<p class="note__text">', `${x.vt ? `<blockquote class="note__verse clamp-3" lang="${x.n.anchor.trans}">${esc(x.vt)}</blockquote>` : ''}${hl ? `<p class="note__links">${hl}<span class="muted">markiert</span></p>` : ''}<p class="note__text clamp-3">`)
-        .replace('<div class="note__answer"><span class="field__label">Antwort</span><p>', '<div class="note__answer"><span class="field__label">Antwort</span><p class="clamp-3">')
-        .replace('<div class="card__foot">', `<div class="card__scope"><span class="field__label">Gilt für</span>${scopeSel('data-note-scope', x.n.id, x.scope, x.n.anchor.trans === 'ru' ? 'ru' : null)}${x.n.kind === 'question' ? `<span class="field__label">Priorität</span>${prioSel(x.n.id, x.n.prio)}` : ''}</div><div class="card__foot"><button type="button" class="btn btn--ghost dash__expand" data-expand>Ganzen Text</button>`);
-    }).join('')}</div>`).join('');
+    return ngroups.map(([g, rows]) => `${g !== null ? `<h3 class="dash__group">${esc(g)} <span class="muted">(${rows.length})</span></h3>` : ''}<div class="card-grid dash__notes">${rows.map((x) => noteTile(x, topicsById)).join('')}</div>`).join('');
   }
 
   function filtersHtml(tab, topics) {

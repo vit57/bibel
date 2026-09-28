@@ -1,6 +1,6 @@
 // Service Worker der Web-App: hält die App vollständig offline vor (Cache je Build-Version).
 // Die Version wird beim Build eingesetzt; eine neue Version ersetzt den alten Cache beim nächsten Start.
-const VERSION = 'c169c17db974';
+const VERSION = '632564a7c221';
 const CACHE = `bibel-${VERSION}`;
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
