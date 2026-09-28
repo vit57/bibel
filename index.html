@@ -2276,7 +2276,7 @@ self.onmessage = (e) => {
 };
 </script>
 <script>
-window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"632564a7c221","date":"2026-09-28T06:56:44.115Z"};
+window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"88330c0f2f94","textHash":"388a16c679ea","date":"2026-09-28T07:16:01.018Z"};
 // ---- icons.js ----
 // Eigenes Icon-Set (24er-Raster, Strich 1.75, keine Fremdlizenz). App.icon(name, cls) → SVG-String.
 window.App = window.App || {};
@@ -2487,7 +2487,15 @@ window.App = window.App || {};
     mk('grundtext', { keyPath: 'id' });
   }
 
-  function open() {
+  /** Safari/iPadOS meldet gelegentlich „UnknownError: Unable to open database file on disk“ (Speicher kurz nicht
+   *  erreichbar, z. B. nach dem Aufwachen) – dann nach kurzer Pause erneut versuchen, statt aufzugeben. */
+  const transient = (e) => e && (e.name === 'UnknownError' || /database file|disk|I\/O/i.test(e.message || ''));
+  async function open() {
+    for (let i = 0; ; i++) {
+      try { return await openOnce(); } catch (e) { dbp = null; if (!transient(e) || i >= 3) throw e; await new Promise((r) => setTimeout(r, [300, 1000, 2500][i])); }
+    }
+  }
+  function openOnce() {
     if (dbp) return dbp;
     dbp = new Promise((resolve, reject) => {
       if (!('indexedDB' in window)) { reject(new Error('IndexedDB nicht verfügbar')); return; }
@@ -2515,7 +2523,9 @@ window.App = window.App || {};
   // Vor und nach jedem Schreiben zählen: wer währenddessen liest, lädt neu (und reiht sich hinter die Schreibtransaktion).
   const bump = (s) => { db.rev[s] = (db.rev[s] || 0) + 1; };
   const db = {
-    open,
+    open, transient,
+    /** Verbindung schließen und beim nächsten Zugriff neu öffnen (nach einem vorübergehenden Speicherfehler). */
+    async reset() { const p = dbp; dbp = null; try { (await p)?.close(); } catch (e) { /* ignoriert */ } },
     async get(s, key) { return req((await store(s)).get(key)); },
     async all(s) { return req((await store(s)).getAll()); },
     async range(s, lo, hi) { return req((await store(s)).getAll(IDBKeyRange.bound(lo, hi))); },
@@ -2601,7 +2611,7 @@ window.App = window.App || {};
     const t0 = performance.now();
     const meta = await App.db.get('meta', 'textBuild');
     const booksMeta = await App.db.get('meta', 'books');
-    const hash = window.BUILD.hash;
+    const hash = window.BUILD.textHash || window.BUILD.hash;   // nur bei geänderten Texten neu einlesen
     if (meta && meta.value === hash && booksMeta) {
       setBooks(booksMeta.value);
       return { imported: false, ms: Math.round(performance.now() - t0) };
@@ -9875,7 +9885,7 @@ window.App = window.App || {};
     const root = document.getElementById('app');
     root.innerHTML = `<div class="boot" role="status"><h1 class="boot__title">Bibel</h1><p class="boot__text" id="boot-text">Wird gestartet …</p><div class="progress boot__bar"><div class="progress__bar" id="boot-bar" style="width:0%"></div></div></div>`;
     let hasProfile;
-    try {
+    const boot = async () => {
       await App.db.open();
       hasProfile = await App.settings.init();
       const r = await App.data.bootstrap((p, t) => {
@@ -9884,11 +9894,20 @@ window.App = window.App || {};
       });
       App.bootInfo = r;
       await App.glossary.init();
+    };
+    try {
+      // vorübergehende Speicherfehler (iPadOS) bis zu dreimal mit Pause wiederholen – die Daten bleiben unberührt
+      for (let i = 0; ; i++) {
+        try { await boot(); break; } catch (e) { if (!App.db.transient(e) || i >= 2) throw e; byId('boot-text').textContent = 'Speicher wird erneut geöffnet …'; await App.db.reset(); await new Promise((r) => setTimeout(r, 1500 * (i + 1))); }
+      }
     } catch (e) {
       const hint = e && e.name === 'VersionError'
         ? 'Die gespeicherten Daten stammen von einer neueren Version dieser App. Bitte die neueste HTML-Datei verwenden.'
-        : 'Diese Datei braucht einen Browser mit IndexedDB (Chrome oder Safari). Im privaten Fenster kann der Speicher gesperrt sein.';
-      root.innerHTML = `<div class="boot" role="alert"><h1 class="boot__title">Start nicht möglich</h1><p class="boot__text">${esc(e.message)}</p><p class="muted">${hint}</p></div>`;
+        : App.db.transient(e)
+          ? 'Safari konnte seinen Speicher gerade nicht öffnen (bekannter Fehler von iPadOS/Safari). Deine Daten sind dadurch nicht verloren. „Neu versuchen“ tippen; hilft das nicht, die App ganz schließen (von unten wischen und nach oben wegschieben) und neu öffnen, notfalls das Gerät neu starten. Wenig freier Speicher auf dem Gerät kann die Ursache sein.'
+          : 'Diese Datei braucht einen Browser mit IndexedDB (Chrome oder Safari). Im privaten Fenster kann der Speicher gesperrt sein.';
+      root.innerHTML = `<div class="boot" role="alert"><h1 class="boot__title">Start nicht möglich</h1><p class="boot__text">${esc(e.message)}</p><p class="muted">${hint}</p><p><button type="button" class="btn btn--primary" id="boot-retry">Neu versuchen</button></p></div>`;
+      byId('boot-retry').addEventListener('click', () => location.reload());
       return;
     }
     // Web-App: offline vorhalten (Service Worker) und Speicher dauerhaft anfordern (Safari löscht sonst nach 7 Tagen ohne Nutzung)
