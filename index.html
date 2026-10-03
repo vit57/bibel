@@ -844,8 +844,10 @@ mark.hl, .vsep.hl { color: inherit; border-radius: var(--r-1); padding: var(--sp
 /* Parallelansicht: eine Grid-Zeile pro Verspaar → gleiche Höhe für beide Spalten */
 .reading--parallel { max-width: none; }
 .parallel__head, .parallel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--sp-6); }
-.parallel__head { margin-bottom: var(--sp-4); align-items: start; }
+.parallel__head { margin-bottom: var(--sp-3); align-items: start; }
 .parallel__head .reading__title { margin-bottom: var(--sp-0); }
+.parallel__col-title { text-align: center; }
+.parallel__col-title > p { margin: var(--sp-1) var(--sp-0) var(--sp-0); }   /* Ausgabe zentriert unter der Nummer, kompakt (Nachtrag 18) */
 .parallel__full { grid-column: 1 / -1; }
 /* drei Spalten mit weiterer Übersetzung (Nachtrag 15); auf schmalen Bildschirmen weicht die Seite in die Breite aus */
 .reading--three .parallel__head, .reading--three .parallel { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--sp-5); }
@@ -1387,7 +1389,13 @@ mark.hl, .vsep.hl { color: inherit; border-radius: var(--r-1); padding: var(--sp
 .songs__more { align-self: center; margin-top: var(--sp-3); }
 .songs__empty { gap: var(--sp-3); }
 .songs__h { font-size: var(--fs-lg); }
-.songs__crumbs { margin-bottom: var(--sp-3); }
+.songs__crumbs { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.songs__pager { display: inline-flex; align-items: center; gap: var(--sp-1); font-family: var(--font-ui); font-variant-numeric: tabular-nums; }
+.songs__pager [data-off] { opacity: 0.3; pointer-events: none; }
+.songs__pos { min-width: calc(var(--sp-8) + var(--sp-4)); text-align: center; color: var(--c-text-muted); font-size: var(--fs-label); }
+.songs--swap .reading__title, .songs--swap .reading__heading, .songs--swap .song__epigraph, .songs--swap .song { animation: song-in var(--dur-2) var(--ease) both; }
+@keyframes song-in { from { opacity: 0; transform: translateY(var(--sp-1)); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .songs--swap .reading__title, .songs--swap .reading__heading, .songs--swap .song__epigraph, .songs--swap .song { animation: none; } }
 .song { font-family: var(--font-read); font-size: var(--fs-read); line-height: var(--lh-read); display: flex; flex-direction: column; gap: var(--sp-5); }
 .song__no { color: var(--c-accent); }
 .song__chorus { padding-left: var(--sp-5); border-left: var(--bw-4) solid var(--c-accent-soft); font-style: italic; }
@@ -1714,10 +1722,10 @@ a.pchip:focus-visible { outline: var(--sp-1) solid var(--c-focus); outline-offse
 .note-scope legend { padding: var(--sp-0) var(--sp-1); }
 
 /* Kapiteltitel (Nachtrag 11): zentriert, Buchname gesperrt, große Kapitelnummer, feine Linie */
-.reading__title--chapter { display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); text-align: center; margin: var(--sp-2) var(--sp-0) var(--sp-6); font-size: inherit; }
+.reading__title--chapter { display: flex; flex-direction: column; align-items: center; gap: var(--sp-0); text-align: center; margin: var(--sp-1) var(--sp-0) var(--sp-4); font-size: inherit; }
 .reading__book { font-family: var(--font-ui); font-size: var(--fs-ui); font-weight: var(--fw-bold); letter-spacing: var(--caps-track); text-transform: uppercase; color: var(--c-text-muted); }
-.reading__ch { font-family: var(--font-read); font-size: max(var(--fs-chapter), calc(var(--fs-read) * 2.4)); font-weight: var(--fw-regular); line-height: 1; color: var(--c-text); font-variant-numeric: lining-nums; }
-.reading__title--chapter::after { content: ""; display: block; width: var(--sp-7); height: var(--bw-2); margin-top: var(--sp-3); border-radius: var(--r-full); background: var(--c-accent); opacity: 0.6; }
+.reading__ch { font-family: var(--font-read); font-size: max(var(--fs-chapter), calc(var(--fs-read) * 2.1)); font-weight: var(--fw-regular); line-height: 1; color: var(--c-text); font-variant-numeric: lining-nums; }
+.reading__title--chapter::after { content: ""; display: block; width: var(--sp-7); height: var(--bw-2); margin-top: var(--sp-2); border-radius: var(--r-full); background: var(--c-accent); opacity: 0.6; }
 .reading__title--col .reading__ch { font-size: max(var(--fs-2xl), calc(var(--fs-read) * 1.8)); }
 .reading__title--chapter + .reading__heading { text-align: center; }
 /* Bibelwissen: Stellen und Namen gleich groß */
@@ -1791,15 +1799,16 @@ a.pchip:focus-visible { outline: var(--sp-1) solid var(--c-focus); outline-offse
 .chapter-box { overflow-anchor: none; }   /* Austausch des Kapitelbereichs soll die Scrollverankerung nicht auslösen */
 
 /* Bücher auf einen Blick (Nachtrag 13) – Hinweis unter dem Kapiteltitel */
-.ctx { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); margin: calc(-1 * var(--sp-4)) var(--sp-0) var(--sp-5); font-family: var(--font-ui); font-size: var(--fs-ui); line-height: var(--lh-ui); text-align: center; hyphens: manual; }
+.ctx { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--sp-2) var(--sp-3); margin: calc(-1 * var(--sp-2)) var(--sp-0) var(--sp-4); font-family: var(--font-ui); font-size: var(--fs-ui); line-height: var(--lh-ui); text-align: center; hyphens: manual; }
 .ctx p { margin: var(--sp-0); }
 .ctx__part { color: var(--c-text); }
 .ctx__label { font-weight: var(--fw-bold); letter-spacing: var(--caps-track); text-transform: uppercase; color: var(--c-text-muted); margin-right: var(--sp-1); }
-.ctx__moments { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); }
-.ctx__moment { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--ctl-h); padding: var(--sp-1) var(--sp-3); border-radius: var(--r-full); background: var(--c-accent-soft); color: var(--c-on-accent-soft); font-weight: var(--fw-bold); text-decoration: none; }
+.ctx__moments { display: contents; }   /* Momente fließen mit Teil und Einführung in einer Zeile (Nachtrag 18) */
+.ctx__moment { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: calc(var(--ctl-h) - var(--sp-2)); padding: var(--sp-0) var(--sp-3); border-radius: var(--r-full); background: var(--c-accent-soft); color: var(--c-on-accent-soft); font-weight: var(--fw-bold); text-decoration: none; }
 .ctx__moment:hover { text-decoration: underline; }
-.ctx__intro { width: 100%; max-width: var(--read-max); text-align: left; border: var(--bw-1) solid var(--c-border); border-radius: var(--r-3); background: var(--c-surface); }
-.ctx__intro > summary { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: var(--ctl-h); padding: var(--sp-2) var(--sp-4); cursor: pointer; color: var(--c-accent); font-weight: var(--fw-bold); list-style: none; }
+.ctx__intro { text-align: left; border: var(--bw-1) solid var(--c-border); border-radius: var(--r-full); background: var(--c-surface); }
+.ctx__intro[open] { flex-basis: 100%; width: 100%; max-width: var(--read-max); border-radius: var(--r-3); }   /* zu: kleiner Knopf in der Zeile; offen: ganze Breite */
+.ctx__intro > summary { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: calc(var(--ctl-h) - var(--sp-2)); padding: var(--sp-0) var(--sp-3); cursor: pointer; color: var(--c-accent); font-weight: var(--fw-bold); list-style: none; }
 .ctx__intro > summary::-webkit-details-marker { display: none; }
 .ctx__intro[open] > summary { border-bottom: var(--bw-1) solid var(--c-border); }
 .ctx__intro > :not(summary) { margin: var(--sp-3) var(--sp-4); }
@@ -1895,8 +1904,8 @@ a.pchip:focus-visible { outline: var(--sp-1) solid var(--c-focus); outline-offse
 .backup__sync .backup__title { display: flex; align-items: center; gap: var(--sp-2); }
 
 /* ---------- Kapitel auf einen Blick (Nachtrag 18): Titelzeile, Info-Fenster, Kasten, Kapitelaufstellung ---------- */
-.ch-sub { margin: calc(-1 * var(--sp-4)) var(--sp-0) var(--sp-5); text-align: center; font-family: var(--font-read); font-style: italic; font-size: var(--fs-lg); line-height: var(--lh-tight); color: var(--c-text-muted); }
-.ch-sub + .ctx { margin-top: calc(-1 * var(--sp-3)); }
+.ch-sub { margin: calc(-1 * var(--sp-2)) var(--sp-0) var(--sp-3); text-align: center; font-family: var(--font-read); font-style: italic; font-size: var(--fs-lg); line-height: var(--lh-tight); color: var(--c-text-muted); }
+.ch-sub + .ctx { margin-top: calc(-1 * var(--sp-1)); }
 .ch-sub__btn { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-3); border: var(--bw-1) solid transparent; border-radius: var(--r-full); background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .ch-sub__btn:hover, .ch-sub__btn[aria-expanded="true"] { border-color: var(--c-border); background: var(--c-surface); color: var(--c-text); }
 .ch-sub__btn:focus-visible { outline: var(--bw-2) solid var(--c-focus); outline-offset: var(--bw-2); }
@@ -2312,7 +2321,7 @@ self.onmessage = (e) => {
 };
 </script>
 <script>
-window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"f91fab224fa7","textHash":"388a16c679ea","date":"2026-10-03T18:33:41.329Z"};
+window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"7aa6c29aab97","textHash":"388a16c679ea","date":"2026-10-03T20:33:58.723Z"};
 // ---- icons.js ----
 // Eigenes Icon-Set (24er-Raster, Strich 1.75, keine Fremdlizenz). App.icon(name, cls) → SVG-String.
 window.App = window.App || {};
@@ -6976,7 +6985,9 @@ window.App = window.App || {};
     const fav = (await favs()).has(s.id), prev = songs[i - 1], next = songs[i + 1];
     const center = App.settings.values.songAlign === 'mitte';   // Ausrichtung des Liedtextes (je Profil)
     const btn = (x, dir) => (x ? `<a class="btn ${dir > 0 ? 'btn--primary' : ''}" href="#/lieder/${x.id}" lang="ru">${dir < 0 ? I('chevron-left') : ''}${esc(x.no != null ? `№ ${noOf(x)}` : x.title)}${dir > 0 ? I('chevron-right') : ''}</a>` : '<span></span>');
-    return `<nav class="songs__crumbs"><a class="btn btn--ghost" href="#/lieder">${I('arrow-back')}Alle Lieder</a></nav>
+    const pg = (x, dir) => (x ? `<a class="btn btn--ghost btn--icon" href="#/lieder/${x.id}" data-song-step="${dir}" aria-label="${dir < 0 ? 'Vorheriges' : 'Nächstes'} Lied: ${esc(label(x))}" title="${esc(label(x))}">${I(dir < 0 ? 'chevron-left' : 'chevron-right')}</a>` : `<span class="btn btn--ghost btn--icon" aria-hidden="true" data-off>${I(dir < 0 ? 'chevron-left' : 'chevron-right')}</span>`);
+    return `<nav class="songs__crumbs" aria-label="Lieder"><a class="btn btn--ghost" href="#/lieder">${I('arrow-back')}Alle Lieder</a>
+        <span class="songs__pager">${pg(prev, -1)}<span class="songs__pos">${i + 1} / ${songs.length}</span>${pg(next, 1)}</span></nav>
       <h1 class="reading__title" lang="ru">${s.no != null ? `<span class="song__no">№ ${esc(noOf(s))}</span> ` : ''}${esc(s.title)}</h1>
       <p class="reading__heading" lang="ru">${esc([bookName(bookOf(s)), s.section].filter(Boolean).join(' · '))}</p>
       ${s.epigraph ? `<p class="song__epigraph" lang="ru">${epigraphHtml(s.epigraph)}</p>` : ''}
@@ -6989,8 +7000,25 @@ window.App = window.App || {};
         <button type="button" class="btn btn--ghost" data-song-del="${s.id}">${I('trash')}Löschen</button></div>
       <nav class="chapter-nav" aria-label="Liedwechsel">${btn(prev, -1)}${btn(next, 1)}</nav>`;
   }
+  // Liedwechsel (Nachtrag 18): sanft einblenden statt springen; Wischen (Tablet) und Pfeiltasten (Mac) blättern
+  let lastSong = null;
+  const step = (dir) => {
+    if (document.getElementById('reading')?.dataset.song !== decodeURIComponent(location.hash.slice('#/lieder/'.length))) return false;   // neues Lied wird noch aufgebaut
+    const a = document.querySelector(`.songs__pager [data-song-step="${dir}"]`); if (a) { location.hash = a.getAttribute('href'); return true; } return false; };
+  document.addEventListener('keydown', (e) => {
+    if (!/^#\/lieder\/./.test(location.hash) || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable], .dialog')) return;
+    if (step(e.key === 'ArrowLeft' ? -1 : 1)) e.preventDefault();
+  });
+  let tx = null;
+  document.addEventListener('touchstart', (e) => { tx = /^#\/lieder\/./.test(location.hash) && e.touches.length === 1 && e.target.closest?.('.song') ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null; }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (!tx) return; const t = e.changedTouches[0], dx = t.clientX - tx.x, dy = t.clientY - tx.y, dt = Date.now() - tx.t; tx = null;
+    if (Math.abs(dx) > 70 && Math.abs(dy) < Math.abs(dx) * 0.5 && dt < 700 && !String(getSelection())) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
   sg.render = async function (target, path) {
-    target.className = 'reading songs';
+    const swap = path && lastSong && lastSong !== path; lastSong = path || null;
+    target.className = `reading songs${swap ? ' songs--swap' : ''}`;
     target.lang = 'de';
     target.innerHTML = path ? await songHtml(path) : await listHtml();
     target.dataset.song = path || '';
