@@ -1680,7 +1680,11 @@ a.pchip:focus-visible { outline: var(--sp-1) solid var(--c-focus); outline-offse
 /* breitere Leiste für Darstellung und Wörterverzeichnis */
 .side .design-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .side .theme-grid { grid-template-columns: repeat(auto-fill, minmax(var(--card-min-side), 1fr)); }
-.side .font-list { grid-template-columns: minmax(0, 1fr); }
+.side .font-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* Seitenleiste: kompakt in zwei Spalten, Probesatz nur bei der gewählten Schrift */
+.side .font-btn { padding: var(--sp-2); }
+.side .font-btn__name { font-size: var(--fs-ui); }
+.side .font-btn[aria-pressed="false"] .font-btn__sample { display: none; }
+.side .font-btn[aria-pressed="true"] { grid-column: 1 / -1; }
 .side .glossary__top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-2); }
 .side .glossary__top .picker__search { grid-column: 1; grid-row: 1; }
 .side .glossary__top [data-g-new] { grid-column: 2; grid-row: 1; }
@@ -1941,6 +1945,26 @@ a.pchip:focus-visible { outline: var(--sp-1) solid var(--c-focus); outline-offse
 .ntile__acts .btn--icon { width: calc(var(--ctl-h) - var(--sp-2)); height: calc(var(--ctl-h) - var(--sp-2)); }
 .ntile__acts [data-sunday][aria-pressed="true"] { color: var(--c-accent); background: var(--c-accent-soft); }
 
+/* ---------- Darstellung: aufklappbare Gruppen (Nachtrag 18) ---------- */
+.setgrp__all { align-items: center; }
+.setgrp__all p { margin: var(--sp-0); }
+.setgrp { border: var(--bw-1) solid var(--c-border); border-radius: var(--r-3); background: var(--c-surface); }
+.setgrp + .setgrp { margin-top: calc(-1 * var(--sp-2)); }
+.setgrp__sum { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); cursor: pointer; list-style: none; border-radius: var(--r-3); }
+.setgrp__sum::-webkit-details-marker { display: none; }
+.setgrp__sum:hover { background: var(--c-surface-2); }
+.setgrp__sum:focus-visible { outline: var(--bw-2) solid var(--c-focus); outline-offset: var(--bw-2); }
+.setgrp__sum > .icon:first-child { flex: none; color: var(--c-accent); }
+.setgrp__txt { display: flex; flex-direction: column; gap: var(--sp-0); min-width: var(--sp-0); flex: 1; }
+.setgrp__t { font-weight: var(--fw-bold); }
+.setgrp__d { font-size: var(--fs-label); color: var(--c-text-muted); line-height: var(--lh-tight); }
+.setgrp__chev { flex: none; transition: transform var(--dur-1) var(--ease); }
+.setgrp[open] > .setgrp__sum .setgrp__chev { transform: rotate(180deg); }
+.setgrp[open] > .setgrp__sum { border-bottom: var(--bw-1) solid var(--c-border); border-radius: var(--r-3) var(--r-3) var(--sp-0) var(--sp-0); }
+.setgrp__body { padding: var(--sp-4); gap: var(--sp-5); }
+
+.song-printdlg__range { gap: var(--sp-3); padding-left: var(--sp-6); }
+
 /* print.css */
 /* Druck / PDF (A4). Nur Tokens; Maße in pt/mm, weil Druck. Bildschirm: Druckteile ausgeblendet. */
 .print-only { display: none; }
@@ -1956,6 +1980,18 @@ a.pchip:focus-visible { outline: var(--sp-1) solid var(--c-focus); outline-offse
   .export-print blockquote { margin: var(--sp-1) var(--sp-0); padding-left: var(--sp-3); border-left: var(--bw-2) solid var(--c-border-strong); font-style: italic; }
   .export-print p { margin: var(--sp-1) var(--sp-0); }
   .export-print__item { break-inside: avoid; }
+  /* Lieder drucken (Nachtrag 18) */
+  .song-print { break-inside: avoid-page; margin-bottom: var(--sp-6); }
+  .song-print--page { break-before: page; }
+  .song-print__title { font-size: calc(var(--fs-print) * 1.45) !important; margin-top: var(--sp-0) !important; font-family: var(--font-read) !important; }
+  .song-print__epigraph { font-style: italic; color: var(--c-text-muted); }
+  .song-print__text { display: flex; flex-direction: column; gap: var(--sp-4); }
+  .song-print__text .song__stanza { margin: var(--sp-0); }
+  .song-print__text .song__chorus { padding-left: var(--sp-4); border-left: var(--bw-2) solid var(--c-border-strong); font-style: italic; }
+  .song-print--center { text-align: center; }
+  .song-print--center .song__chorus { padding-left: var(--sp-0); border-left: 0; }
+  .song-print--big .song-print__text { font-size: calc(var(--fs-print) * 1.35); line-height: 1.5; }   /* lint-ok Zeilenhöhe zum Singen */
+  .song-print__toc { columns: 2; column-gap: var(--sp-6); font-size: var(--fs-print-small); break-after: page; }
   .export-print__notes { height: calc(var(--sp-8) * 1.5); border-bottom: var(--bw-1) dashed var(--c-border-strong); }   /* Platz für Notizen bei der Besprechung */
   .export-print__meta { font-family: var(--font-ui); font-size: var(--fs-print-small); color: var(--c-text-muted); }
 }
@@ -2276,7 +2312,7 @@ self.onmessage = (e) => {
 };
 </script>
 <script>
-window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"88330c0f2f94","textHash":"388a16c679ea","date":"2026-09-28T07:16:01.018Z"};
+window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"f91fab224fa7","textHash":"388a16c679ea","date":"2026-10-03T18:33:41.329Z"};
 // ---- icons.js ----
 // Eigenes Icon-Set (24er-Raster, Strich 1.75, keine Fremdlizenz). App.icon(name, cls) → SVG-String.
 window.App = window.App || {};
@@ -6852,15 +6888,20 @@ window.App = window.App || {};
       return `<p class="song__stanza${chorus ? ' song__chorus' : ''}">${lines.map(esc).join('<br>')}</p>`;
     }).join('');
   }
-  async function listHtml() {
+  /** Lieder der aktuellen Auswahl (Liederbuch, Abschnitt, Filter, Suche) – für Liste und Druck. */
+  async function selection() {
     const all = await sg.all(), fav = await favs();
     const books = await sg.books();
     if (st.book != null && !books.includes(st.book)) st.book = null;
     const songs = st.book == null ? all : all.filter((s) => bookOf(s) === st.book);
-    const sections = [...new Set(songs.map((s) => s.section).filter(Boolean))];
     const q = norm(st.q), qNo = /^\d+$/.test(st.q.trim()) ? +st.q.trim() : null;
     const hits = songs.filter((s) => (!st.section || s.section === st.section) && (st.only !== 'fav' || fav.has(s.id)) && (!['eigen', 'import'].includes(st.only) || originOf(s) === st.only)
       && (!q || (qNo != null ? s.no === qNo || noOf(s).startsWith(String(qNo)) : norm(`${s.title} ${s.text}`).includes(q))));
+    return { all, fav, books, songs, hits };
+  }
+  async function listHtml() {
+    const { all, fav, books, songs, hits } = await selection();
+    const sections = [...new Set(songs.map((s) => s.section).filter(Boolean))];
     const shown = hits.slice(0, st.limit);
     const empty = !all.length;
     const multi = books.length > 1;
@@ -6876,7 +6917,7 @@ window.App = window.App || {};
         </div>
         <div class="songs__actions">
           <span class="songs__group"><button type="button" class="btn btn--primary" data-song-new>${I('plus')}Neues Lied</button><button type="button" class="btn" data-book-new>${I('library')}Neues Liederbuch</button>${st.book != null ? `<button type="button" class="btn btn--ghost" data-book-rename>${I('edit')}Umbenennen</button>` : ''}</span>
-          <span class="songs__group"><button type="button" class="btn" data-song-import>${I('upload')}Importieren</button>${songs.length ? `<button type="button" class="btn" data-song-export>${I('download')}Exportieren</button>` : ''}</span>
+          <span class="songs__group"><button type="button" class="btn" data-song-import>${I('upload')}Importieren</button>${songs.length ? `<button type="button" class="btn" data-song-export>${I('download')}Exportieren</button><button type="button" class="btn" data-song-print>${I('printer')}Drucken …</button>` : ''}</span>
           <span class="songs__group songs__group--end">${songs.length ? `<button type="button" class="btn btn--ghost" data-song-bulkdel>${I('trash')}Lieder löschen …</button>` : st.book != null ? `<button type="button" class="btn btn--ghost" data-song-bulkdel>${I('trash')}Liederbuch entfernen</button>` : ''}</span>
         </div></div>
       ${empty ? `<div class="card songs__empty"><h2 class="songs__h">Noch keine Lieder</h2>
@@ -6888,6 +6929,46 @@ window.App = window.App || {};
           <button type="button" class="btn btn--ghost btn--icon songs__fav" data-fav="${s.id}" aria-pressed="${fav.has(s.id)}" aria-label="${esc(label(s))} ${fav.has(s.id) ? 'aus den Favoriten entfernen' : 'zu den Favoriten'}">${I(fav.has(s.id) ? 'star-filled' : 'star')}</button></li>`).join('')}</ol>
         ${hits.length > shown.length ? `<button type="button" class="btn songs__more" data-song-more>Weitere ${Math.min(200, hits.length - shown.length)} anzeigen</button>` : ''}`}`;
   }
+  // ---------- Drucken (Nachtrag 18): ein Lied, die angezeigte Auswahl, Favoriten oder ein Nummernbereich ----------
+  async function printDialog(id) {
+    const { all, fav, hits } = await selection();
+    const cur = id ? all.find((x) => x.id === id) : null;
+    const book = cur ? bookOf(cur) : st.book;
+    const inBook = book != null ? all.filter((x) => bookOf(x) === book) : all;
+    const favs = all.filter((x) => fav.has(x.id));
+    const nos = inBook.map((x) => x.no).filter((n) => n != null);
+    const opts = [...(cur ? [['one', `dieses Lied (${cur.no != null ? `№ ${noOf(cur)}` : cur.title})`]] : []), ['hits', `die angezeigte Auswahl (${hits.length})`], ['fav', `Favoriten (${favs.length})`], ['range', `Nummern von – bis${book != null ? ` in „${bookName(book)}“` : ''}`]];
+    const center = App.settings.values.songAlign === 'mitte';
+    const body = App.ui.el(`<form class="stack song-printdlg">
+      <fieldset class="field"><legend class="field__label">Was drucken?</legend>${opts.map(([k, l], i) => `<label class="radio"><input type="radio" name="what" value="${k}" ${i === 0 ? 'checked' : ''}> <span lang="ru">${esc(l)}</span></label>`).join('')}
+        <div class="row song-printdlg__range"><label class="field"><span class="field__label">von</span><input class="input input--short" type="number" name="from" min="1" value="${nos.length ? Math.min(...nos) : 1}"></label><label class="field"><span class="field__label">bis</span><input class="input input--short" type="number" name="to" min="1" value="${nos.length ? Math.min(Math.max(...nos), (nos.length ? Math.min(...nos) : 1) + 9) : 10}"></label></div></fieldset>
+      <fieldset class="field"><legend class="field__label">Ausrichtung</legend><div class="row"><label class="radio"><input type="radio" name="align" value="links" ${center ? '' : 'checked'}> links</label><label class="radio"><input type="radio" name="align" value="mitte" ${center ? 'checked' : ''}> mittig</label></div></fieldset>
+      <fieldset class="field"><legend class="field__label">Schrift</legend><div class="row"><label class="radio"><input type="radio" name="size" value="normal" checked> normal</label><label class="radio"><input type="radio" name="size" value="gross"> groß (zum Singen)</label></div></fieldset>
+      <label class="toggle"><input type="checkbox" class="toggle__input" name="page" checked><span class="toggle__track"></span>Jedes Lied auf einer neuen Seite</label>
+      <label class="toggle"><input type="checkbox" class="toggle__input" name="toc"><span class="toggle__track"></span>Inhaltsverzeichnis voranstellen (bei mehreren Liedern)</label>
+      <p class="muted">Druck über den Druckdialog des Geräts – dort auch „Als PDF sichern“.</p></form>`);
+    const ok = await App.ui.dialog({ title: 'Lieder drucken', body, buttons: [{ label: 'Abbrechen', value: false }, { label: 'Drucken', variant: 'primary', value: true }] });
+    if (!ok) return;
+    const f = new FormData(body), what = f.get('what');
+    let list = what === 'one' ? [cur] : what === 'fav' ? favs : what === 'range' ? inBook.filter((x) => x.no != null && x.no >= +f.get('from') && x.no <= +f.get('to')) : hits;
+    list = list.filter(Boolean);
+    if (!list.length) { App.ui.toast('Keine Lieder für diese Auswahl.'); return; }
+    if (list.length > 300 && !(await App.ui.dialog({ title: 'Viele Lieder', body: App.ui.el(`<p>${list.length} Lieder ergeben einen sehr langen Druck. Trotzdem drucken?</p>`), buttons: [{ label: 'Abbrechen', value: false }, { label: 'Drucken', variant: 'primary', value: true }] }))) return;
+    sg.print(list, { center: f.get('align') === 'mitte', big: f.get('size') === 'gross', page: !!f.get('page'), toc: !!f.get('toc') && list.length > 1 });
+  }
+  const songTitle = (s) => `${s.no != null ? `№ ${noOf(s)} ` : ''}${s.title}`;
+  /** Druckfassung der Lieder (über App.exporter.printHtml: hell, nur dieser Inhalt). */
+  sg.print = function (list, { center = false, big = false, page = true, toc = false } = {}) {
+    const one = list.length === 1;
+    const html = `${one ? '' : `<header class="export-print__head"><h1 lang="ru">${esc(st.book != null ? bookName(st.book) : 'Lieder')}</h1><p>${list.length} Lieder</p></header>`}
+      ${toc ? `<ol class="song-print__toc" lang="ru">${list.map((s) => `<li>${esc(songTitle(s))}</li>`).join('')}</ol>` : ''}
+      ${list.map((s, i) => `<section class="song-print${center ? ' song-print--center' : ''}${big ? ' song-print--big' : ''}${page && (i > 0 || toc) ? ' song-print--page' : ''}" lang="ru">
+        <h2 class="song-print__title">${esc(songTitle(s))}</h2>
+        <p class="export-print__meta">${esc([bookName(bookOf(s)), s.section].filter(Boolean).join(' · '))}</p>
+        ${s.epigraph ? `<p class="song-print__epigraph">${esc(s.epigraph)}</p>` : ''}
+        <div class="song-print__text">${stanzasHtml(s.text)}</div></section>`).join('')}`;
+    App.exporter.printHtml(html, one ? songTitle(list[0]) : `Lieder (${list.length})`);
+  };
   async function songHtml(id) {
     const all = await sg.all(); const cur = all.find((x) => x.id === id);
     const songs = cur ? all.filter((x) => bookOf(x) === bookOf(cur)) : all; const i = songs.findIndex((s) => s.id === id); const s = songs[i];
@@ -6903,6 +6984,7 @@ window.App = window.App || {};
       <div class="song${center ? ' song--center' : ''}" lang="ru">${stanzasHtml(s.text)}</div>
       <div class="song__tools"><div class="segmented" role="group" aria-label="Ausrichtung des Liedtextes">${[['links', 'align-left', 'Links'], ['mitte', 'align-center', 'Mittig']].map(([k, ic, l]) => `<button type="button" class="segmented__btn" data-song-align="${k}" aria-pressed="${(k === 'mitte') === center}">${I(ic)}${l}</button>`).join('')}</div>
         <button type="button" class="btn" data-fav="${s.id}" aria-pressed="${fav}">${I(fav ? 'star-filled' : 'star')}${fav ? 'Favorit' : 'Zu den Favoriten'}</button>
+        <button type="button" class="btn btn--ghost" data-song-print="${s.id}">${I('printer')}Drucken …</button>
         <button type="button" class="btn btn--ghost" data-song-edit="${s.id}">${I('edit')}Bearbeiten</button>
         <button type="button" class="btn btn--ghost" data-song-del="${s.id}">${I('trash')}Löschen</button></div>
       <nav class="chapter-nav" aria-label="Liedwechsel">${btn(prev, -1)}${btn(next, 1)}</nav>`;
@@ -7037,6 +7119,7 @@ window.App = window.App || {};
     return false;
   };
   sg.onClick = async function (e) {
+    const pr = e.target.closest('[data-song-print]'); if (pr) { await printDialog(pr.dataset.songPrint || null); return true; }
     const al = e.target.closest('[data-song-align]');
     if (al) { const mid = al.dataset.songAlign === 'mitte'; App.settings.set('songAlign', mid ? 'mitte' : null); document.querySelector('.song')?.classList.toggle('song--center', mid); al.parentElement.querySelectorAll('[data-song-align]').forEach((b) => b.setAttribute('aria-pressed', String(b === al))); return true; }
     const fv = e.target.closest('[data-fav]');
@@ -9713,9 +9796,10 @@ window.App = window.App || {};
         ${[1, 1.1, 1.25, 1.5, 1.75].map((x) => `<option value="${x}">${Math.round(x * 100)} %</option>`).join('')}</select></label>
       <p class="muted">Änderungen gelten sofort und nur für ${esc(S.profile.name)}.</p></div>`);
     body.insertBefore(el(`<div class="field"><span class="field__label">Markierungsfarben</span><div><button type="button" class="btn" data-meanings>${I('settings')}Farbbedeutungen festlegen …</button></div></div>`), body.lastElementChild);
-    body.insertBefore(App.barconf.editor(), body.lastElementChild);
-    body.insertBefore(App.annotUI.viewEditor(), body.lastElementChild);
-    body.insertBefore(App.textpkg.editor(), body.lastElementChild);
+    const barEd = App.barconf.editor(), viewEd = App.annotUI.viewEditor(), tpEd = App.textpkg.editor();
+    body.insertBefore(barEd, body.lastElementChild);
+    body.insertBefore(viewEd, body.lastElementChild);
+    body.insertBefore(tpEd, body.lastElementChild);
     // Nachtrag 16: Lichteffekt, Unterstreichungen je Art, Reihenfolge der Übersicht
     const GL = [['aus', 'Aus'], ['leisten', 'Leisten'], ['ueberall', 'Überall']];
     const light = el(`<div class="field"><span class="field__label" id="lbl-glight">Lichteffekt folgt dem Mauszeiger</span>
@@ -9733,12 +9817,33 @@ window.App = window.App || {};
     ulBox.addEventListener('change', (e) => { const f = e.target.closest('[data-ul-f]'); if (!f) return; const k = f.closest('[data-ul]').dataset.ul; const ul = JSON.parse(JSON.stringify(S.values.ul || {})); ul[k] = { ...(ul[k] || {}), [f.dataset.ulF]: f.value }; S.set('ul', ul); });
     ulBox.addEventListener('click', (e) => { if (!e.target.closest('[data-ul-reset]')) return; S.set('ul', null); ulBox.querySelectorAll('[data-ul]').forEach((row) => { const [, ds, dc, dw] = S.UL_TYPES[row.dataset.ul]; row.querySelector('[data-ul-f="s"]').value = ds; row.querySelector('[data-ul-f="c"]').value = dc; row.querySelector('[data-ul-f="w"]').value = dw; }); App.ui.toast('Unterstreichungen zurückgesetzt'); });
     body.insertBefore(ulBox, body.lastElementChild);
-    body.insertBefore(App.dashboard.orderEditor(), body.lastElementChild);
+    const orderEd = App.dashboard.orderEditor();
+    body.insertBefore(orderEd, body.lastElementChild);
     const B = window.BUILD || {};
     body.appendChild(el(`<div class="field about"><span class="field__label">Über die App</span>
       <p class="about__line"><strong>Version ${esc(B.version || '–')}</strong>${B.release ? ` · ${esc(B.release)}` : ''}</p>
       <p class="muted about__line">Build ${esc(B.hash || '–')}${B.date ? ` · ${esc(new Date(B.date).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }))}` : ''}</p>${B.web ? '<p class="muted about__line" data-offline>Offline: wird geprüft …</p>' : ''}</div>`));
     if (B.web) App.offlineState().then((st) => { const x = body.querySelector('[data-offline]'); if (x) x.textContent = { bereit: 'Offline: bereit ✓ – funktioniert ohne Internet', laden: 'Offline: wird noch geladen … (App mit Internet geöffnet lassen)', aus: 'Offline: nicht verfügbar (nur über die Internetadresse)', fehler: 'Offline: nicht verfügbar' }[st]; });
+    // Nachtrag 18: in aufklappbare Gruppen ordnen (Überschrift, kurze Inhaltsangabe; offene Gruppen merkt sich das Gerät)
+    const fieldOf = (sel, up = '.field') => body.querySelector(sel)?.closest(up);
+    const GROUPS = [
+      ['text', 'book', 'Text und Schrift', 'Schriftart, Größe, Breite, Zeilenhöhe', [fieldOf('.font-list'), fieldOf('[data-range="size"]'), fieldOf('[data-width-pick]'), fieldOf('[data-set="lh"]'), fieldOf('[data-toggle="lines"]', '.toggle')]],
+      ['look', 'sun', 'Design und Farben', 'Design, Farbschema, Lichteffekt', [fieldOf('.design-grid'), fieldOf('.theme-grid'), light]],
+      ['bible', 'highlighter', 'Im Bibeltext', 'Schlüsselmomente, Begriffe, Namen, Unterstreichungen, Markierungsfarben', [fieldOf('[data-chmoments]'), fieldOf('[data-toggle="glossMarks"]', '.toggle'), fieldOf('[data-toggle="personNames"]', '.toggle'), ulBox, fieldOf('[data-meanings]')]],
+      ['bars', 'columns', 'Leisten und Ansichten', 'Kopfleiste, Seitenleiste, Übersicht anordnen', [fieldOf('[data-toggle="pinMode"]', '.toggle'), barEd, viewEd, orderEd]],
+      ['trans', 'library', 'Übersetzungen', 'Dritte Spalte in der Parallelansicht', [tpEd]],
+      ['app', 'settings', 'App', 'Zoom, Version, Offline-Stand', [fieldOf('[data-set="zoom"]'), body.querySelector('.about')]],
+    ];
+    body.querySelector(':scope > p.muted')?.remove();   // Hinweis steht jetzt oben
+    let openSet; try { openSet = new Set(JSON.parse(localStorage.getItem('bibel.setgrp') || '["text"]')); } catch (e) { openSet = new Set(['text']); }
+    for (const [k, ic, t, d, nodes] of GROUPS) {
+      const g = el(`<details class="setgrp" data-setgrp="${k}" ${openSet.has(k) ? 'open' : ''}><summary class="setgrp__sum">${I(ic)}<span class="setgrp__txt"><span class="setgrp__t">${t}</span><span class="setgrp__d">${d}</span></span>${I('chevron-down', 'setgrp__chev')}</summary><div class="setgrp__body stack"></div></details>`);
+      const inner = g.querySelector('.setgrp__body'); for (const n of nodes) if (n) inner.appendChild(n);
+      g.addEventListener('toggle', () => { if (g.open) openSet.add(k); else openSet.delete(k); try { localStorage.setItem('bibel.setgrp', JSON.stringify([...openSet])); } catch (e) { /* ohne Speicher: nur für jetzt */ } });
+      body.appendChild(g);
+    }
+    body.insertBefore(el(`<div class="row-between setgrp__all"><p class="muted">Gilt sofort und nur für ${esc(S.profile.name)}.</p><button type="button" class="btn btn--ghost" data-setgrp-all>${I('chevron-down')}Alle aufklappen</button></div>`), body.firstChild);
+    body.addEventListener('click', (e) => { const b = e.target.closest('[data-setgrp-all]'); if (!b) return; const all = [...body.querySelectorAll('.setgrp')], open = !all.every((x) => x.open); all.forEach((x) => { x.open = open; }); b.lastChild.textContent = open ? 'Alle zuklappen' : 'Alle aufklappen'; });
     const sync = () => {
       const s = S.values;
       body.querySelector('[data-set="lh"]').value = String(s.lh);
