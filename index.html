@@ -2321,7 +2321,7 @@ self.onmessage = (e) => {
 };
 </script>
 <script>
-window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"7aa6c29aab97","textHash":"388a16c679ea","date":"2026-10-03T20:33:58.723Z"};
+window.BUILD = {"web":true,"version":"2.16.0","release":"Nachtrag 18 vom 27.09.2026","hash":"5e4adbece3c8","textHash":"388a16c679ea","date":"2026-10-04T18:54:04.616Z"};
 // ---- icons.js ----
 // Eigenes Icon-Set (24er-Raster, Strich 1.75, keine Fremdlizenz). App.icon(name, cls) → SVG-String.
 window.App = window.App || {};
@@ -5822,6 +5822,218 @@ window.App = window.App || {};
   App.glossary = gl;
 })(window.App);
 
+// ---- pdfshare.js ----
+// Drucken auf iPad/iPhone (Nachtrag 18): iPadOS führt window.print() in Apps vom Home-Bildschirm nicht aus
+// (in Safari-Tabs nur direkt im Antippen). Stattdessen wird die Druckfassung in einem unsichtbaren Rahmen mit den
+// Druckregeln (print.css) gesetzt, Seite für Seite auf ein Canvas gezeichnet, als PDF (ein Bild je A4-Seite)
+// zusammengesetzt und über das Teilen-Menü angeboten: Drucken (AirPrint), In Dateien sichern, Senden.
+window.App = window.App || {};
+(function (App) {
+  'use strict';
+  const pdf = {};
+  const IOS = /iP(ad|hone|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  pdf.force = false;   // Tests: Weg über PDF auch am Rechner
+  pdf.needed = () => IOS || pdf.force;
+  const MM = 96 / 25.4;
+  const PAGE = { w: 210 * MM, h: 297 * MM, mt: 16 * MM, mr: 15 * MM, mb: 18 * MM, ml: 15 * MM };   // wie @page in print.css
+  const SCALE = 2;   // ≈ 192 dpi
+
+  /** CSS des Dokuments mit aufgelösten Druckregeln (@media print gilt, reine Bildschirmregeln entfallen). */
+  function printCss() {
+    let out = '';
+    const walk = (rules) => {
+      for (const r of rules) {
+        if (r.type === CSSRule.MEDIA_RULE) {
+          const m = r.media.mediaText;
+          if (/\bprint\b/.test(m) && !/\bnot\s+print\b/.test(m)) walk(r.cssRules);
+          else if (!/\bscreen\b/.test(m)) out += r.cssText + '\n';
+        } else if (r.type !== CSSRule.PAGE_RULE) out += r.cssText + '\n';
+      }
+    };
+    for (const sh of document.styleSheets) { try { walk(sh.cssRules); } catch (e) { /* fremdes Blatt: nicht lesbar */ } }
+    return out;
+  }
+  /** Zustand des Wurzelelements festhalten (Schema, Klassen, CSS-Variablen) – vor dem Zurückstellen der Druckansicht. */
+  pdf.capture = () => { const r = document.documentElement; return { attrs: [...r.attributes].map((a) => [a.name, a.value]), body: document.body.className }; };
+
+  async function layout(node, snap, rootClass) {
+    const f = document.createElement('iframe');
+    f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+    const cw = PAGE.w - PAGE.ml - PAGE.mr;
+    Object.assign(f.style, { position: 'fixed', left: '-20000px', top: '0', width: `${cw}px`, height: '800px', border: '0', visibility: 'hidden', pointerEvents: 'none' });
+    document.body.appendChild(f);
+    const d = f.contentDocument;
+    d.open(); d.write('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>'); d.close();
+    const h = d.documentElement;
+    for (const [k, v] of snap.attrs) h.setAttribute(k, v);
+    h.dataset.theme = 'hell';
+    for (const c of rootClass.split(' ').filter(Boolean)) h.classList.add(c);
+    const st = d.createElement('style');
+    st.textContent = `${printCss()}\n*{-webkit-hyphens:manual!important;hyphens:manual!important;animation:none!important;transition:none!important}html,body{margin:0!important;padding:0!important;background:#fff!important}`;
+    d.head.appendChild(st);
+    d.body.className = snap.body;
+    d.body.appendChild(d.importNode(node, true));
+    void d.body.offsetHeight;
+    // unsichtbare Rahmen bekommen keine Bildwechsel (requestAnimationFrame) – darum nur zeitbegrenzt warten
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    try { await Promise.race([d.fonts.ready, sleep(3000)]); } catch (e) { /* ohne Schriften-API */ }
+    await sleep(60); void d.body.offsetHeight;
+    return { f, d, cw };
+  }
+
+  const clear = (c) => !c || c === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(c);
+  /** Geometrie sammeln: Textstücke (je Wort mit Lage und Schrift), Flächen (Hintergründe, Rahmen), Umbruchregeln. */
+  function collect(d) {
+    const win = d.defaultView, range = d.createRange(), runs = [], boxes = [], breaks = [], avoids = [];
+    const visit = (el) => {
+      const cs = win.getComputedStyle(el);
+      if (cs.display === 'none') return;
+      if (cs.position === 'absolute' && (parseFloat(cs.width) <= 1 || parseFloat(cs.height) <= 1) && cs.overflow === 'hidden') return;   // nur für Bildschirmleser (visually-hidden)
+      const hidden = cs.visibility === 'hidden' || +cs.opacity === 0;
+      if (!hidden) {
+        const rects = [...el.getClientRects()];
+        for (const r of rects) {
+          if (!r.width || !r.height) continue;
+          if (!clear(cs.backgroundColor)) boxes.push({ x: r.left, y: r.top, w: r.width, h: r.height, c: cs.backgroundColor });
+        }
+        const r = el.getBoundingClientRect();
+        if (r.width && r.height && rects.length <= 1) {
+          for (const [side, x, y, w, hh] of [['Top', r.left, r.top, r.width, null], ['Bottom', r.left, null, r.width, null], ['Left', r.left, r.top, null, r.height], ['Right', null, r.top, null, r.height]]) {
+            const bw = parseFloat(cs[`border${side}Width`]), bc = cs[`border${side}Color`];
+            if (!(bw > 0) || cs[`border${side}Style`] === 'none' || clear(bc)) continue;
+            boxes.push({ x: x ?? r.right - bw, y: y ?? r.bottom - bw, w: w ?? bw, h: hh ?? bw, c: bc, dash: /dash|dot/.test(cs[`border${side}Style`]) });
+          }
+          if (cs.breakBefore === 'page' || cs.pageBreakBefore === 'always') breaks.push(r.top);
+          if (cs.breakAfter === 'page' || cs.pageBreakAfter === 'always') breaks.push(r.bottom);
+          if (/avoid/.test(cs.breakInside) || cs.pageBreakInside === 'avoid') avoids.push({ top: r.top, bottom: r.bottom });
+        }
+      }
+      for (const c of el.childNodes) {
+        if (c.nodeType === 1) visit(c);
+        else if (c.nodeType === 3 && !hidden && /\S/.test(c.data)) words(c, cs);
+      }
+    };
+    const tx = (s, t) => (t === 'uppercase' ? s.toUpperCase() : t === 'lowercase' ? s.toLowerCase() : s);
+    const words = (node, cs) => {
+      const font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`, base = { font, c: cs.color, ls: cs.letterSpacing };
+      const re = /\S+/g; let m;
+      while ((m = re.exec(node.data))) {
+        range.setStart(node, m.index); range.setEnd(node, m.index + m[0].length);
+        const rs = range.getClientRects();
+        if (rs.length === 1) { const r = rs[0]; runs.push({ ...base, t: tx(m[0], cs.textTransform), x: r.left, top: r.top, bottom: r.bottom }); continue; }
+        for (let i = 0; i < m[0].length; i++) {   // Wort über ein Zeilenende: Zeichen für Zeichen
+          range.setStart(node, m.index + i); range.setEnd(node, m.index + i + 1);
+          const r = range.getClientRects()[0]; if (r) runs.push({ ...base, t: tx(m[0][i], cs.textTransform), x: r.left, top: r.top, bottom: r.bottom });
+        }
+      }
+    };
+    visit(d.body);
+    return { runs, boxes, breaks: [...new Set(breaks.map(Math.round))].sort((a, b) => a - b), avoids, total: d.documentElement.scrollHeight };
+  }
+  /** Seitengrenzen: keine Textzeile zerschneiden, „break-inside: avoid“ und erzwungene Seitenumbrüche beachten. */
+  function paginate(g) {
+    const H = PAGE.h - PAGE.mt - PAGE.mb, pages = [];
+    let start = Math.min(0, ...g.runs.map((r) => r.top));
+    while (start < g.total - 1 && pages.length < 500) {
+      let end = start + H;
+      const forced = g.breaks.find((b) => b > start + 2 && b < end);
+      if (forced != null) end = forced;
+      else if (end < g.total) {
+        for (const a of g.avoids) if (a.top > start + 2 && a.top < end && a.bottom > end && a.bottom - a.top <= H) end = Math.min(end, a.top);
+        let moved = true;
+        while (moved) { moved = false; for (const r of g.runs) if (r.top < end - 0.5 && r.bottom > end + 0.5) { end = r.top; moved = true; } }
+        if (end <= start + 2) end = start + H;   // Notfall: übergroße Zeile
+      }
+      if (g.runs.some((r) => r.top >= start - 0.5 && r.top < end) || g.boxes.some((b) => b.y < end && b.y + b.h > start)) pages.push([start, Math.min(end, g.total)]);
+      start = end;
+    }
+    return pages;
+  }
+  async function paint(d, g, [start, end]) {
+    const c = d.createElement('canvas');   // Canvas im Rahmen: nutzt dessen geladene Schriften
+    c.width = Math.round(PAGE.w * SCALE); c.height = Math.round(PAGE.h * SCALE);
+    const x = c.getContext('2d');
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height);
+    x.scale(SCALE, SCALE); x.translate(PAGE.ml, PAGE.mt - start);
+    x.save(); x.beginPath(); x.rect(-PAGE.ml, start, PAGE.w, end - start); x.clip();
+    for (const b of g.boxes) {
+      if (b.y >= end || b.y + b.h <= start) continue;
+      x.fillStyle = b.c;
+      if (b.dash && (b.w > b.h ? b.w : b.h) > 6) { const horiz = b.w > b.h, len = horiz ? b.w : b.h; for (let p = 0; p < len; p += 6) x.fillRect(horiz ? b.x + p : b.x, horiz ? b.y : b.y + p, horiz ? Math.min(3, len - p) : b.w, horiz ? b.h : Math.min(3, len - p)); }
+      else x.fillRect(b.x, b.y, b.w, b.h);
+    }
+    x.restore();
+    let font = '';
+    for (const r of g.runs) {
+      if (r.top < start - 0.5 || r.top >= end) continue;
+      if (r.font !== font) { x.font = r.font; font = r.font; }
+      if ('letterSpacing' in x) x.letterSpacing = r.ls === 'normal' ? '0px' : r.ls;
+      x.fillStyle = r.c;
+      const m = x.measureText(r.t), asc = m.fontBoundingBoxAscent, desc = m.fontBoundingBoxDescent, hgt = r.bottom - r.top;
+      const baseline = asc != null && desc != null ? r.top + (hgt - (asc + desc)) / 2 + asc : r.top + hgt * 0.8;
+      x.fillText(r.t, r.x, baseline);
+    }
+    const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.8));
+    return { jpeg: new Uint8Array(await blob.arrayBuffer()), w: c.width, h: c.height };
+  }
+  /** Minimales PDF: je Seite ein JPEG-Bild über die ganze A4-Seite. */
+  function buildPdf(pages, title) {
+    const enc = new TextEncoder(), chunks = [], offs = [];
+    let len = 0;
+    const push = (v) => { const b = typeof v === 'string' ? enc.encode(v) : v; chunks.push(b); len += b.length; };
+    const obj = (id, fn) => { offs[id] = len; push(`${id} 0 obj\n`); fn(); push('\nendobj\n'); };
+    const W = 595.28, H = 841.89, n = pages.length, info = 3 + 3 * n;
+    const pdfStr = (s) => `(${String(s).replace(/[^\x20-\x7e]/g, '?').replace(/[()\\]/g, '\\$&')})`;
+    push('%PDF-1.4\n'); push(new Uint8Array([0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]));
+    obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>'));
+    obj(2, () => push(`<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + 3 * i} 0 R`).join(' ')}] /Count ${n} >>`));
+    pages.forEach((p, i) => {
+      const pid = 3 + 3 * i, cid = pid + 1, iid = pid + 2, cs = `q ${W} 0 0 ${H} 0 0 cm /Im${i} Do Q`;
+      obj(pid, () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im${i} ${iid} 0 R >> >> /Contents ${cid} 0 R >>`));
+      obj(cid, () => push(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+      obj(iid, () => { push(`<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpeg.length} >>\nstream\n`); push(p.jpeg); push('\nendstream'); });
+    });
+    obj(info, () => push(`<< /Title ${pdfStr(title)} /Producer (Bibel-App) >>`));
+    const xref = len;
+    push(`xref\n0 ${info + 1}\n0000000000 65535 f \n${offs.slice(1).map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}trailer\n<< /Size ${info + 1} /Root 1 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+    return new Blob(chunks, { type: 'application/pdf' });
+  }
+  /** Druckfassung → PDF-Blob. node: Inhalt (wird kopiert), snap: pdf.capture(), rootClass: z. B. „is-export-print“. */
+  pdf.render = async function (node, snap, rootClass = '', onProgress = () => {}) {
+    const { f, d } = await layout(node, snap, rootClass);
+    try {
+      const g = collect(d), ranges = paginate(g), pages = [];
+      for (let i = 0; i < ranges.length; i++) { onProgress(i + 1, ranges.length); pages.push(await paint(d, g, ranges[i])); }
+      return { blob: buildPdf(pages, snap.title || ''), pages: pages.length };
+    } finally { f.remove(); }
+  };
+  const fileName = (t) => `${String(t || 'Druck').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Druck'}.pdf`;
+  /** Ganzer Ablauf: PDF bauen, dann Teilen-Menü (Drucken, Sichern) anbieten. */
+  pdf.share = async function ({ node, snap, rootClass = '', title = 'Druck' }) {
+    const { el, esc } = App.ui;
+    const closeWait = App.ui.toast('PDF wird erstellt …', { timeout: 120000 });
+    let res;
+    try { res = await pdf.render(node, { ...snap, title }, rootClass); }
+    catch (e) { App.ui.toast(`PDF konnte nicht erstellt werden: ${e.message}`); return null; }
+    finally { closeWait?.(); }
+    const file = new File([res.blob], fileName(title), { type: 'application/pdf' });
+    pdf.last = { blob: res.blob, pages: res.pages, name: file.name };
+    const url = URL.createObjectURL(res.blob);
+    const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+    const body = el(`<div class="stack pdfshare">
+      <p><strong>${esc(file.name)}</strong> · ${res.pages} ${res.pages === 1 ? 'Seite' : 'Seiten'} · ${Math.max(1, Math.round(res.blob.size / 1024))} KB</p>
+      <p class="muted">Im Teilen-Menü „Drucken“ wählen – oder „In Dateien sichern“.</p>
+      <div class="row">${canShare ? `<button type="button" class="btn btn--primary" data-pdf-share>${App.icon('printer')}Drucken oder teilen …</button>` : ''}
+        <a class="btn ${canShare ? '' : 'btn--primary'}" href="${url}" download="${esc(file.name)}" data-pdf-open>${App.icon('download')}PDF öffnen</a></div></div>`);
+    // Teilen direkt im Antippen aufrufen (Safari verlangt eine frische Nutzeraktion)
+    body.querySelector('[data-pdf-share]')?.addEventListener('click', () => { navigator.share({ files: [file], title }).catch((e) => { if (e?.name !== 'AbortError') App.ui.toast('Teilen nicht möglich – „PDF öffnen“ verwenden.'); }); });
+    await App.ui.dialog({ title: 'PDF ist fertig', body, buttons: [{ label: 'Schließen', value: null }] });
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return res;
+  };
+  App.pdf = pdf;
+})(window.App);
+
 // ---- print.js ----
 // Druck / PDF über window.print(): aktuelles Kapitel (einzeln oder parallel) mit Markierungen,
 // Kopfzeile „Kapitel – Übersetzung – Profil – Datum“ und Abschnitt „Anmerkungen“ (Kommentare und Fragen).
@@ -5891,6 +6103,13 @@ window.App = window.App || {};
     if (App.state.dash) { App.ui.toast('Drucken geht in der Lese- und Parallelansicht.'); return; }
     getSelection()?.removeAllRanges();
     pr.prepare();
+    if (App.pdf?.needed()) {   // iPad/iPhone: print() geht in der Home-Bildschirm-App nicht – PDF über das Teilen-Menü
+      const reading = document.getElementById('reading'), wrap = document.createElement('div');
+      wrap.className = 'page'; wrap.appendChild(reading.cloneNode(true));
+      const snap = App.pdf.capture(), title = document.title;
+      pr.cleanup();
+      return App.pdf.share({ node: wrap, snap, rootClass: 'is-print', title });
+    }
     window.print();
     setTimeout(pr.cleanup, 0);   // Safari feuert „afterprint“ nicht immer zuverlässig
   };
@@ -9396,6 +9615,7 @@ window.App = window.App || {};
   ex.print = (items, book) => ex.printHtml(ex.html(items, book), titleOf(book));
   /** Beliebige Druckfassung über den Druckdialog (hell, nur dieser Inhalt; z. B. Liste für die Besprechung am Sonntag). */
   ex.printHtml = function (html, docTitle) {
+    if (App.pdf?.needed()) return App.pdf.share({ node: el(`<div class="export-print" id="export-print">${html}</div>`), snap: App.pdf.capture(), rootClass: 'is-export-print', title: docTitle });   // iPad: PDF über das Teilen-Menü
     const box = el(`<div class="export-print" id="export-print">${html}</div>`);
     document.body.appendChild(box);
     const r = document.documentElement, theme = r.dataset.theme, title = document.title;
